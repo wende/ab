@@ -48,7 +48,7 @@ defmodule FunctionTypeTest do
 
     test "try creating validators for function types" do
       case PropertyGenerator.get_function_spec(FunctionTypeFunctions, :apply_func) do
-        {:ok, {input_types, output_type}} ->
+        {:ok, {_input_types, output_type}} ->
           IO.puts("\nTrying to create validator for function return type:")
 
           try do

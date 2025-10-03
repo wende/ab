@@ -15,6 +15,7 @@ defmodule PropertyGenerator.Validators do
   """
   def type_to_validator({:type, _, :integer, []}), do: &is_integer/1
   def type_to_validator({:type, _, :float, []}), do: &is_float/1
+  def type_to_validator({:type, _, :number, []}), do: &is_number/1
   def type_to_validator({:type, _, :boolean, []}), do: &is_boolean/1
   def type_to_validator({:type, _, :binary, []}), do: &is_binary/1
   def type_to_validator({:type, _, :bitstring, []}), do: &is_bitstring/1

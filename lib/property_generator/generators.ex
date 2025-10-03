@@ -30,6 +30,7 @@ defmodule PropertyGenerator.Generators do
   """
   def type_to_generator({:type, _, :integer, []}), do: StreamData.integer()
   def type_to_generator({:type, _, :float, []}), do: StreamData.float()
+  def type_to_generator({:type, _, :number, []}), do: StreamData.one_of([StreamData.integer(), StreamData.float()])
   def type_to_generator({:type, _, :boolean, []}), do: StreamData.boolean()
   def type_to_generator({:type, _, :binary, []}), do: StreamData.binary()
   def type_to_generator({:type, _, :bitstring, []}), do: StreamData.bitstring()

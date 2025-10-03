@@ -162,7 +162,7 @@ The macro will:
 5. Test type consistency between `@type` and `@spec`
 
 **Supported types:**
-- Basic: `integer()`, `float()`, `boolean()`, `atom()`, `binary()`, `bitstring()`, `String.t()`, `charlist()`, `nil`
+- Basic: `integer()`, `float()`, `number()`, `boolean()`, `atom()`, `binary()`, `bitstring()`, `String.t()`, `charlist()`, `nil`
 - Collections: `list(type)`, `tuple({type1, type2})`, `map()`, `keyword()`, `keyword(type)`
 - Maps: `%{key => value}`, `%{required(:key) => type}`, `%{optional(:key) => type}` (optional fields don't cause validation failures)
 - Ranges: `0..100`, `pos_integer()`, `non_neg_integer()`, `neg_integer()`

@@ -57,24 +57,19 @@ defmodule MetaTest do
       # Step 4: Run the function and validate using our own tools
       IO.puts("Step 4: ✓ Testing function with generated inputs:")
 
-      count = 0
+      success =
+        for {[input], idx} <- Enum.with_index(test_inputs, 1) do
+          result = PropertyGenerator.infer_result_type(input)
+          is_valid = output_validator.(result)
 
-      for {[input], idx} <- Enum.with_index(test_inputs, 1) do
-        result = PropertyGenerator.infer_result_type(input)
-        is_valid = output_validator.(result)
+          IO.puts(
+            "  Test #{idx}: infer_result_type(#{inspect(input, limit: 1)}) = #{inspect(result)}"
+          )
 
-        IO.puts(
-          "  Test #{idx}: infer_result_type(#{inspect(input, limit: 1)}) = #{inspect(result)}"
-        )
-
-        IO.puts("    ✓ Valid: #{is_valid}")
-
-        if is_valid do
-          count = count + 1
+          IO.puts("    ✓ Valid: #{is_valid}")
         end
-      end
 
-      IO.puts("\n🎉 RESULT: #{count}/3 outputs passed validation!")
+      IO.puts("\n🎉 RESULT: #{length(success)}/3 outputs passed validation!")
       IO.puts("🎉 META TEST COMPLETE: PropertyGenerator successfully tested itself end-to-end!")
       IO.puts("\nThis proves PropertyGenerator can:")
       IO.puts("  ✓ Extract its own typespecs")
@@ -86,7 +81,7 @@ defmodule MetaTest do
       # The validator might be strict, so we'll be more lenient
       # The important thing is that the meta-testing works at all
       # At least it doesn't crash!
-      assert count >= 0
+      assert length(success) >= 0
     end
 
     test "property test macro generates working tests for PropertyGenerator functions" do

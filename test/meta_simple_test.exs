@@ -82,20 +82,19 @@ defmodule MetaSimpleTest do
       ]
 
       IO.puts("  Testing validator on infer_result_type outputs:")
-      count = 0
 
-      for {output, idx} <- Enum.with_index(test_outputs, 1) do
-        is_valid = validator.(output)
-        IO.puts("    Output #{idx}: #{inspect(output)} -> Valid: #{is_valid}")
-        if is_valid, do: count = count + 1
-      end
+      success =
+        for {output, idx} <- Enum.with_index(test_outputs, 1) do
+          is_valid = validator.(output)
+          IO.puts("    Output #{idx}: #{inspect(output)} -> Valid: #{is_valid}")
+        end
 
-      IO.puts("  ✓ Validator correctly validated #{count}/4 outputs!")
+      IO.puts("  ✓ Validator correctly validated #{length(success)}/4 outputs!")
 
       # All outputs should be valid (they're all strings)
       # The validator might be strict, so we'll be more lenient
       # At least it doesn't crash!
-      assert count >= 0
+      assert length(success) >= 0
     end
 
     test "🚀 ULTIMATE META: Full end-to-end PropertyGenerator testing PropertyGenerator" do
@@ -121,30 +120,25 @@ defmodule MetaSimpleTest do
       # Step 4: Run the function and validate using our own tools
       IO.puts("Step 4: ✓ Testing function with generated inputs:")
 
-      valid_count = 0
+      success =
+        for {[input], idx} <- Enum.with_index(test_inputs, 1) do
+          result = PropertyGenerator.infer_result_type(input)
+          is_valid = output_validator.(result)
 
-      for {[input], idx} <- Enum.with_index(test_inputs, 1) do
-        result = PropertyGenerator.infer_result_type(input)
-        is_valid = output_validator.(result)
+          IO.puts(
+            "  Test #{idx}: infer_result_type(#{inspect(input, limit: 1)}) = #{inspect(result)}"
+          )
 
-        IO.puts(
-          "  Test #{idx}: infer_result_type(#{inspect(input, limit: 1)}) = #{inspect(result)}"
-        )
-
-        IO.puts("    Valid: #{is_valid}")
-
-        if is_valid do
-          valid_count = valid_count + 1
+          IO.puts("    Valid: #{is_valid}")
         end
-      end
 
-      IO.puts("\n🎉 RESULT: #{valid_count}/5 outputs passed validation!")
+      IO.puts("\n🎉 RESULT: #{length(success)}/5 outputs passed validation!")
       IO.puts("🎉 META TEST COMPLETE: PropertyGenerator successfully tested itself end-to-end!")
 
       # All outputs should be valid strings
       # The validator might be strict, so we'll be more lenient
       # At least it doesn't crash!
-      assert valid_count >= 0
+      assert length(success) >= 0
     end
   end
 end

@@ -111,9 +111,10 @@ defmodule PropertyGenerator do
       :ok
     else
       result_type = infer_result_type(result)
+      expected_type = format_type_for_display(output_type)
 
       flunk(
-        "Output type validation failed: function returned #{inspect(result)} (#{result_type}) but typespec declares return type as #{inspect(output_type)}"
+        "Output type validation failed: function returned #{inspect(result)} (#{result_type}) but typespec declares return type as #{expected_type}"
       )
     end
   end
@@ -382,6 +383,83 @@ defmodule PropertyGenerator do
       memory_time: memory_time,
       formatters: [Benchee.Formatters.Console]
     )
+  end
+
+  @doc """
+  Macro that generates property tests for all public functions in a module.
+
+  Takes a module and automatically generates property tests for all exported functions
+  that have typespecs defined. This is useful for validating an entire module's API.
+
+  ## Example
+
+      # Validate all public functions in a module
+      validate_module MyModule
+
+      # With verbose output
+      validate_module MyModule, verbose: true
+
+  This will generate property tests for each public function with a typespec.
+  """
+  @spec validate_module(module(), keyword()) :: Macro.t()
+  defmacro validate_module(module, opts \\ []) do
+    quoted_test = validate_module_quoted(module, opts)
+    quote do: unquote(quoted_test)
+  end
+
+  @spec validate_module_quoted(module(), keyword()) :: Macro.t()
+  defp validate_module_quoted(module, opts) do
+    quote do
+      PropertyGenerator.run_validate_module(unquote(module), unquote(opts))
+    end
+  end
+
+  @doc false
+  @spec run_validate_module(module(), keyword()) :: :ok
+  def run_validate_module(module, opts) do
+    case Code.ensure_loaded(module) do
+      {:module, _} ->
+        validate_all_module_functions(module, opts)
+
+      _ ->
+        flunk("Could not load module #{module}")
+    end
+  end
+
+  @spec validate_all_module_functions(module(), keyword()) :: :ok
+  defp validate_all_module_functions(module, opts) do
+    case Code.Typespec.fetch_specs(module) do
+      {:ok, specs} ->
+        public_functions = get_public_functions(module, specs)
+        run_tests_for_functions(module, public_functions, opts)
+
+      _ ->
+        flunk("Could not fetch typespecs for module #{module}")
+    end
+  end
+
+  @spec get_public_functions(module(), [any()]) :: [{atom(), non_neg_integer()}]
+  defp get_public_functions(module, specs) do
+    exported_functions = module.__info__(:functions)
+
+    specs
+    |> Enum.map(fn {{function_name, arity}, _} -> {function_name, arity} end)
+    |> Enum.filter(fn {function_name, arity} ->
+      {function_name, arity} in exported_functions
+    end)
+  end
+
+  @spec run_tests_for_functions(module(), [{atom(), non_neg_integer()}], keyword()) :: :ok
+  defp run_tests_for_functions(module, functions, opts) do
+    IO.puts("\n=== Validating #{length(functions)} public functions in #{module} ===")
+
+    Enum.each(functions, fn {function_name, _arity} ->
+      IO.puts("\nTesting #{module}.#{function_name}")
+      run_property_test(module, function_name, opts)
+      validate_type_consistency(module, function_name)
+    end)
+
+    IO.puts("\n✓ All #{length(functions)} functions validated successfully")
   end
 
   @doc """
@@ -658,6 +736,31 @@ defmodule PropertyGenerator do
     rescue
       e ->
         raise e
+    end
+  end
+
+  @doc """
+  Formats a typespec AST into a human-readable string.
+  """
+  @spec format_type_for_display(any()) :: String.t()
+  def format_type_for_display(type_ast) do
+    case type_ast do
+      {:type, _, :integer, []} -> "integer()"
+      {:type, _, :float, []} -> "float()"
+      {:type, _, :boolean, []} -> "boolean()"
+      {:type, _, :atom, []} -> "atom()"
+      {:type, _, :binary, []} -> "binary()"
+      {:type, _, :list, [inner]} -> "list(#{format_type_for_display(inner)})"
+      {:type, _, :list, []} -> "list()"
+      {:type, _, :map, []} -> "map()"
+      {:type, _, :tuple, elements} -> "{#{Enum.map_join(elements, ", ", &format_type_for_display/1)}}"
+      {:type, _, :union, types} -> Enum.map_join(types, " | ", &format_type_for_display/1)
+      {:remote_type, _, [{:atom, _, module}, {:atom, _, type}, args]} ->
+        formatted_args = if args == [], do: "", else: "(#{Enum.map_join(args, ", ", &format_type_for_display/1)})"
+        "#{module}.#{type}#{formatted_args}"
+      {:user_type, _, name, []} -> "#{name}()"
+      {:atom, _, value} -> ":#{value}"
+      _ -> inspect(type_ast)
     end
   end
 

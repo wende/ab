@@ -10,7 +10,7 @@ defmodule TestModuleForValidation do
   def multiply(a, b), do: a * b
 
   @spec divide(integer(), pos_integer() | neg_integer()) :: integer()
-  def divide(a, b) when b != 0, do: a / b
+  def divide(a, b) when b != 0, do: div(a, b)
 
   @spec to_string_list([integer()]) :: [String.t()]
   def to_string_list(nums), do: Enum.map(nums, &Integer.to_string/1)

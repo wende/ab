@@ -1,5 +1,11 @@
 # AB
 
+[![Hex.pm](https://img.shields.io/hexpm/v/ab.svg)](https://hex.pm/packages/ab)
+[![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/ab/)
+[![Hex.pm Downloads](https://img.shields.io/hexpm/dt/ab.svg)](https://hex.pm/packages/ab)
+[![GitHub CI](https://github.com/wende/ab/workflows/Elixir%20CI/badge.svg)](https://github.com/wende/ab/actions)
+[![License](https://img.shields.io/hexpm/l/ab.svg)](https://github.com/wende/ab/blob/main/LICENSE)
+
 **Automatically compare two implementations of the same problem with property-based testing and performance benchmarks.**
 
 AB is an Elixir library that makes it effortless to verify that two implementations of the same function behave identically, while also comparing their performance characteristics. Perfect for refactoring, algorithm optimization, and A/B testing different approaches.
@@ -290,115 +296,6 @@ Get human-readable type name from a value:
 ```elixir
 PropertyGenerator.infer_result_type([1, 2, 3])
 # => "list"
-```
-
-## Advanced Usage
-
-### Custom Test Data
-
-While AB generates test data automatically, you can combine it with custom generators:
-
-```elixir
-property "custom test scenario" do
-  check all my_data <- my_custom_generator() do
-    result1 = ModuleA.function(my_data)
-    result2 = ModuleB.function(my_data)
-    assert result1 == result2
-  end
-end
-```
-
-### Struct Type Validation
-
-Validate consistency between `@type` definitions and `@spec`:
-
-```elixir
-defmodule User do
-  @type t :: %__MODULE__{
-    name: String.t(),
-    age: integer()
-  }
-
-  defstruct [:name, :age]
-
-  @spec new(String.t(), integer()) :: t()
-  def new(name, age), do: %__MODULE__{name: name, age: age}
-end
-
-# In test
-validate_struct_consistency User
-```
-
-### Conditional Comparison
-
-Compare implementations only when certain conditions are met:
-
-```elixir
-if System.get_env("RUN_SLOW_TESTS") do
-  compare_test {SlowImpl, :process}, {FastImpl, :process}
-end
-```
-
-## Configuration
-
-In `config/test.exs`:
-
-```elixir
-config :stream_data,
-  max_runs: 100,           # Default number of test cases
-  max_shrinking_steps: 50  # Shrinking iterations for failures
-```
-
-In your test file:
-
-```elixir
-# Configure ExUnit
-ExUnit.configure(
-  exclude: [:slow, :benchmark],
-  trace: true,
-  seed: 0  # Deterministic test runs
-)
-```
-
-## Best Practices
-
-### 1. Use Precise Typespecs
-
-```elixir
-# Good - precise types
-@spec divide(integer(), pos_integer()) :: float()
-
-# Less precise
-@spec divide(number(), number()) :: number()
-```
-
-### 2. Test Edge Cases
-
-The generated tests cover random cases, but add explicit tests for edge cases:
-
-```elixir
-test "handles empty lists" do
-  assert MyModule.sort([]) == []
-end
-```
-
-### 3. Tag Slow Tests
-
-```elixir
-@tag :slow
-benchmark_test {Impl1, :heavy_function}, {Impl2, :heavy_function}
-```
-
-Then run with `mix test --exclude slow` for fast feedback.
-
-### 4. Document Differences
-
-When implementations have different performance characteristics, document why:
-
-```elixir
-# merge_sort is faster for large lists (O(n log n))
-# but has overhead for small lists
-benchmark_test {Sort, :merge_sort}, {Sort, :quick_sort}
 ```
 
 ## Real-World Examples

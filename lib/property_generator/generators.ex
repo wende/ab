@@ -30,7 +30,10 @@ defmodule PropertyGenerator.Generators do
   """
   def type_to_generator({:type, _, :integer, []}), do: StreamData.integer()
   def type_to_generator({:type, _, :float, []}), do: StreamData.float()
-  def type_to_generator({:type, _, :number, []}), do: StreamData.one_of([StreamData.integer(), StreamData.float()])
+
+  def type_to_generator({:type, _, :number, []}),
+    do: StreamData.one_of([StreamData.integer(), StreamData.float()])
+
   def type_to_generator({:type, _, :boolean, []}), do: StreamData.boolean()
   def type_to_generator({:type, _, :binary, []}), do: StreamData.binary()
   def type_to_generator({:type, _, :bitstring, []}), do: StreamData.bitstring()
@@ -40,18 +43,20 @@ defmodule PropertyGenerator.Generators do
   def type_to_generator({:type, _, :term, []}), do: StreamData.term()
   def type_to_generator({:type, _, nil, []}), do: StreamData.constant(nil)
   def type_to_generator({:type, _, :no_return, []}), do: StreamData.constant(:__no_return__)
-  
+
   def type_to_generator({:type, _, :iodata, []}) do
     # iodata is a binary or a possibly nested list of binaries, bytes (0-255), and other iolists
     StreamData.one_of([
       StreamData.binary(),
-      StreamData.list_of(StreamData.one_of([
-        StreamData.binary(),
-        StreamData.integer(0..255)
-      ]))
+      StreamData.list_of(
+        StreamData.one_of([
+          StreamData.binary(),
+          StreamData.integer(0..255)
+        ])
+      )
     ])
   end
-  
+
   def type_to_generator({:atom, _, atom_value}), do: StreamData.constant(atom_value)
   def type_to_generator({:integer, _, int_value}), do: StreamData.constant(int_value)
 
@@ -125,6 +130,24 @@ defmodule PropertyGenerator.Generators do
       nil ->
         generate_map(field_types)
     end
+  end
+
+  def type_to_generator({:type, _, :fun, [{:type, _, :product, arg_types}, return_type]}) do
+    # Generate a function that takes the specified args and returns the specified type
+    return_gen = type_to_generator(return_type)
+    arity = length(arg_types)
+
+    # Generate functions that ignore their arguments and return valid return values
+    StreamData.map(return_gen, fn return_value ->
+      case arity do
+        0 -> fn -> return_value end
+        1 -> fn _ -> return_value end
+        2 -> fn _, _ -> return_value end
+        3 -> fn _, _, _ -> return_value end
+        4 -> fn _, _, _, _ -> return_value end
+        n -> fn args when is_list(args) and length(args) == n -> return_value end
+      end
+    end)
   end
 
   def type_to_generator({:type, _, :union, types}) do

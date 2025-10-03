@@ -185,6 +185,42 @@ defmodule PropertyGenerator.InvalidGenerators do
     ])
   end
 
+  def type_to_invalid_generator({:type, _, :fun, [{:type, _, :product, arg_types}, return_type]}) do
+    # For function types, generate both non-functions AND functions with wrong arity
+    expected_arity = length(arg_types)
+    wrong_arities = [0, 1, 2, 3, 4] -- [expected_arity]
+    
+    # Get the return type generator for making wrong-arity functions
+    return_gen = PropertyGenerator.Generators.type_to_generator(return_type)
+    
+    wrong_arity_generators = 
+      Enum.map(wrong_arities, fn arity ->
+        StreamData.map(return_gen, fn return_value ->
+          case arity do
+            0 -> fn -> return_value end
+            1 -> fn _ -> return_value end
+            2 -> fn _, _ -> return_value end
+            3 -> fn _, _, _ -> return_value end
+            4 -> fn _, _, _, _ -> return_value end
+          end
+        end)
+      end)
+    
+    # Mix wrong-arity functions with non-functions
+    StreamData.one_of([
+      # Non-functions (most common invalid case)
+      StreamData.one_of([
+        StreamData.integer(),
+        StreamData.string(:printable),
+        StreamData.atom(:alphanumeric),
+        StreamData.list_of(StreamData.integer()),
+        generic_map()
+      ]),
+      # Functions with wrong arity
+      StreamData.one_of(wrong_arity_generators)
+    ])
+  end
+
   def type_to_invalid_generator(type) do
     IO.warn("Unknown type #{inspect(type)}, using generic invalid generator")
     generic_invalid_types()

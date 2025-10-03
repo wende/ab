@@ -165,6 +165,7 @@ The macro will:
 - Basic: `integer()`, `float()`, `number()`, `boolean()`, `atom()`, `binary()`, `bitstring()`, `String.t()`, `charlist()`, `nil`, `iodata`, `no_return`
 - Collections: `list(type)`, `tuple({type1, type2})`, `map()`, `keyword()`, `keyword(type)`
 - Maps: `%{key => value}`, `%{required(:key) => type}`, `%{optional(:key) => type}` (optional fields don't cause validation failures)
+- Functions: `(arg_type -> return_type)`, `(arg1, arg2 -> return)`, `(-> return)` for callbacks and higher-order functions
 - Ranges: `0..100`, `pos_integer()`, `non_neg_integer()`, `neg_integer()`
 - Structs: Custom struct types with `@type t :: %__MODULE__{...}`
 - Union types: `integer() | String.t()`
@@ -174,7 +175,9 @@ The macro will:
 
 **Validated against:** Successfully parses all typespecs from real-world libraries like Jason
 
-**Note:** Maps with optional fields and extra keys are properly handled - only required fields must be present.
+**Important notes:**
+- **Maps:** Optional fields and extra keys are properly handled - only required fields must be present.
+- **Functions:** Generated functions have correct arity and return correct types, but are "constant functions" that ignore their arguments. This still validates that tested functions accept and call function arguments correctly, but doesn't verify the lambda's internal logic.
 
 ### `robust_test/2` - Verify Error Handling
 

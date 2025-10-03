@@ -27,11 +27,11 @@ defmodule PropertyGenerator.Validators do
   def type_to_validator({:type, _, :any, []}), do: fn _ -> true end
   def type_to_validator({:type, _, :term, []}), do: fn _ -> true end
   def type_to_validator({:type, _, :no_return, []}), do: fn _ -> false end
-  
+
   def type_to_validator({:type, _, :iodata, []}) do
     fn value -> is_binary(value) or is_list(value) end
   end
-  
+
   def type_to_validator({:atom, _, atom_value}), do: fn value -> value == atom_value end
   def type_to_validator({:integer, _, int_value}), do: fn value -> value == int_value end
 
@@ -121,6 +121,11 @@ defmodule PropertyGenerator.Validators do
       nil ->
         validate_map(field_types)
     end
+  end
+
+  def type_to_validator({:type, _, :fun, [_args, _return]}) do
+    # Function type - validate it's a function
+    &is_function/1
   end
 
   def type_to_validator({:type, _, :union, types}) do

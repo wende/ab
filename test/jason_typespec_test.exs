@@ -17,7 +17,7 @@ defmodule JasonTypespecTest do
         {:encode_to_iodata!, 2}
       ]
 
-      results = 
+      results =
         for {func, arity} <- functions_to_test do
           result = PropertyGenerator.get_function_spec(Jason, func)
           {func, arity, result}
@@ -41,14 +41,17 @@ defmodule JasonTypespecTest do
       end
 
       # Assert all succeeded
-      failures = Enum.filter(results, fn {_func, _arity, result} -> 
-        match?({:error, _}, result)
-      end)
+      failures =
+        Enum.filter(results, fn {_func, _arity, result} ->
+          match?({:error, _}, result)
+        end)
 
       if failures != [] do
-        failed_funcs = Enum.map(failures, fn {func, arity, {:error, reason}} -> 
-          "#{func}/#{arity}: #{reason}"
-        end)
+        failed_funcs =
+          Enum.map(failures, fn {func, arity, {:error, reason}} ->
+            "#{func}/#{arity}: #{reason}"
+          end)
+
         flunk("Failed to parse specs: #{Enum.join(failed_funcs, ", ")}")
       end
     end
@@ -59,14 +62,16 @@ defmodule JasonTypespecTest do
         {:ok, {input_types, _output_type}} ->
           IO.puts("\nTesting generator for Jason.decode/2:")
           IO.puts("  Input types: #{inspect(input_types)}")
-          
+
           try do
             input_gen = PropertyGenerator.Generators.create_input_generator(input_types)
             sample = Enum.take(input_gen, 1) |> List.first()
             IO.puts("  ✓ Generated sample: #{inspect(sample)}")
           rescue
             e ->
-              IO.puts("  ⚠ Generator failed (this may be expected for complex types): #{inspect(e)}")
+              IO.puts(
+                "  ⚠ Generator failed (this may be expected for complex types): #{inspect(e)}"
+              )
           end
 
         {:error, reason} ->
@@ -80,14 +85,14 @@ defmodule JasonTypespecTest do
         {:ok, {_input_types, output_type}} ->
           IO.puts("\nTesting validator for Jason.encode/2 return type:")
           IO.puts("  Output type: #{inspect(output_type)}")
-          
+
           try do
             validator = PropertyGenerator.Validators.create_output_validator(output_type)
-            
+
             # Test with expected success value
             success_result = {:ok, "{\"test\":1}"}
             IO.puts("  Testing {:ok, string}: #{validator.(success_result)}")
-            
+
             # Test with expected error value (if we can create it)
             IO.puts("  ✓ Validator created successfully")
           rescue
@@ -108,14 +113,18 @@ defmodule JasonTypespecTest do
       case PropertyGenerator.get_function_spec(Jason, :decode) do
         {:ok, {[first_type | _], _}} ->
           case first_type do
-            {:type, _, :iodata, []} -> 
+            {:type, _, :iodata, []} ->
               IO.puts("\n⚠ Found iodata type - checking if supported")
+
             {:remote_type, _, [{:atom, _, :elixir}, {:atom, _, :iodata}, []]} ->
               IO.puts("\n⚠ Found remote iodata type - checking if supported")
-            _ -> 
+
+            _ ->
               :ok
           end
-        _ -> :ok
+
+        _ ->
+          :ok
       end
 
       # Check for no_return type
@@ -123,17 +132,22 @@ defmodule JasonTypespecTest do
         {:ok, {_, output_type}} ->
           case output_type do
             {:type, _, :union, types} ->
-              has_no_return = Enum.any?(types, fn
-                {:type, _, :no_return, []} -> true
-                _ -> false
-              end)
-              
+              has_no_return =
+                Enum.any?(types, fn
+                  {:type, _, :no_return, []} -> true
+                  _ -> false
+                end)
+
               if has_no_return do
                 IO.puts("⚠ Found no_return type in union")
               end
-            _ -> :ok
+
+            _ ->
+              :ok
           end
-        _ -> :ok
+
+        _ ->
+          :ok
       end
 
       IO.puts("\n=== Type Support Summary ===")
@@ -142,4 +156,3 @@ defmodule JasonTypespecTest do
     end
   end
 end
-

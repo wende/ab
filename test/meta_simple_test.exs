@@ -13,7 +13,8 @@ defmodule MetaSimpleTest do
     # Test the core functions that have proper typespecs and work well with property testing
     property_test(PropertyGenerator, :create_output_validator_runtime)
     property_test(PropertyGenerator, :infer_result_type)
-    # Note: get_function_spec, create_input_generator_runtime and create_invalid_input_generator_runtime 
+
+    # Note: get_function_spec, create_input_generator_runtime and create_invalid_input_generator_runtime
     # have complex typespecs or are delegated functions that don't work well with property testing
   end
 
@@ -93,7 +94,8 @@ defmodule MetaSimpleTest do
 
       # All outputs should be valid (they're all strings)
       # The validator might be strict, so we'll be more lenient
-      assert count >= 0  # At least it doesn't crash!
+      # At least it doesn't crash!
+      assert count >= 0
     end
 
     test "🚀 ULTIMATE META: Full end-to-end PropertyGenerator testing PropertyGenerator" do
@@ -141,7 +143,8 @@ defmodule MetaSimpleTest do
 
       # All outputs should be valid strings
       # The validator might be strict, so we'll be more lenient
-      assert valid_count >= 0  # At least it doesn't crash!
+      # At least it doesn't crash!
+      assert valid_count >= 0
     end
   end
 end

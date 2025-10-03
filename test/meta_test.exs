@@ -14,7 +14,7 @@ defmodule MetaTest do
     # Test the functions that have direct typespecs and work well with property testing
     property_test(PropertyGenerator, :infer_result_type)
     property_test(PropertyGenerator, :create_output_validator_runtime)
-    # Note: create_input_generator_runtime, create_invalid_input_generator_runtime 
+    # Note: create_input_generator_runtime, create_invalid_input_generator_runtime
     # and validate_type_consistency have complex typespecs that don't work well with property testing
   end
 
@@ -85,7 +85,8 @@ defmodule MetaTest do
 
       # The validator might be strict, so we'll be more lenient
       # The important thing is that the meta-testing works at all
-      assert count >= 0  # At least it doesn't crash!
+      # At least it doesn't crash!
+      assert count >= 0
     end
 
     test "property test macro generates working tests for PropertyGenerator functions" do

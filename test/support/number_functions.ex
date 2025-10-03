@@ -13,4 +13,3 @@ defmodule NumberFunctions do
   def abs_value(n) when n < 0, do: -n
   def abs_value(n), do: n
 end
-

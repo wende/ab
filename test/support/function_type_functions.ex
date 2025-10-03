@@ -15,4 +15,3 @@ defmodule FunctionTypeFunctions do
   @spec callback_example((-> :ok)) :: :ok
   def callback_example(callback), do: callback.()
 end
-

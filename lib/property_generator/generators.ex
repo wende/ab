@@ -39,6 +39,19 @@ defmodule PropertyGenerator.Generators do
   def type_to_generator({:type, _, :any, []}), do: StreamData.term()
   def type_to_generator({:type, _, :term, []}), do: StreamData.term()
   def type_to_generator({:type, _, nil, []}), do: StreamData.constant(nil)
+  def type_to_generator({:type, _, :no_return, []}), do: StreamData.constant(:__no_return__)
+  
+  def type_to_generator({:type, _, :iodata, []}) do
+    # iodata is a binary or a possibly nested list of binaries, bytes (0-255), and other iolists
+    StreamData.one_of([
+      StreamData.binary(),
+      StreamData.list_of(StreamData.one_of([
+        StreamData.binary(),
+        StreamData.integer(0..255)
+      ]))
+    ])
+  end
+  
   def type_to_generator({:atom, _, atom_value}), do: StreamData.constant(atom_value)
   def type_to_generator({:integer, _, int_value}), do: StreamData.constant(int_value)
 

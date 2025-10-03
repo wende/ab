@@ -4,9 +4,9 @@ defmodule NumberFunctionsTest do
   import PropertyGenerator
 
   describe "number() type support" do
-    property_test NumberFunctions, :add_numbers
-    property_test NumberFunctions, :is_positive
-    property_test NumberFunctions, :abs_value
+    property_test(NumberFunctions, :add_numbers)
+    property_test(NumberFunctions, :is_positive)
+    property_test(NumberFunctions, :abs_value)
   end
 
   test "number() validator accepts integers and floats" do
@@ -36,4 +36,3 @@ defmodule NumberFunctionsTest do
     assert integers + floats == 100, "All samples should be numbers"
   end
 end
-

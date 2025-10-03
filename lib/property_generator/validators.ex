@@ -26,6 +26,12 @@ defmodule PropertyGenerator.Validators do
   def type_to_validator({:type, _, nil, []}), do: &is_nil/1
   def type_to_validator({:type, _, :any, []}), do: fn _ -> true end
   def type_to_validator({:type, _, :term, []}), do: fn _ -> true end
+  def type_to_validator({:type, _, :no_return, []}), do: fn _ -> false end
+  
+  def type_to_validator({:type, _, :iodata, []}) do
+    fn value -> is_binary(value) or is_list(value) end
+  end
+  
   def type_to_validator({:atom, _, atom_value}), do: fn value -> value == atom_value end
   def type_to_validator({:integer, _, int_value}), do: fn value -> value == int_value end
 

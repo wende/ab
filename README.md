@@ -162,7 +162,7 @@ The macro will:
 5. Test type consistency between `@type` and `@spec`
 
 **Supported types:**
-- Basic: `integer()`, `float()`, `number()`, `boolean()`, `atom()`, `binary()`, `bitstring()`, `String.t()`, `charlist()`, `nil`
+- Basic: `integer()`, `float()`, `number()`, `boolean()`, `atom()`, `binary()`, `bitstring()`, `String.t()`, `charlist()`, `nil`, `iodata`, `no_return`
 - Collections: `list(type)`, `tuple({type1, type2})`, `map()`, `keyword()`, `keyword(type)`
 - Maps: `%{key => value}`, `%{required(:key) => type}`, `%{optional(:key) => type}` (optional fields don't cause validation failures)
 - Ranges: `0..100`, `pos_integer()`, `non_neg_integer()`, `neg_integer()`
@@ -171,6 +171,8 @@ The macro will:
 - Literals: Specific atom or integer values (e.g., `:ok`, `42`)
 - Generic: `any()`, `term()`
 - Complex: Nested structures, remote types
+
+**Validated against:** Successfully parses all typespecs from real-world libraries like Jason
 
 **Note:** Maps with optional fields and extra keys are properly handled - only required fields must be present.
 

@@ -1,0 +1,30 @@
+name: Publish to Hex.pm
+
+on:
+  push:
+    tags:
+      - 'v*'  # Triggers on tags like v1.0.0, v2.1.3, etc.
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: '26.0'      # Adjust to your OTP version
+          elixir-version: '1.15.0'  # Adjust to your Elixir version
+      
+      - name: Install dependencies
+        run: mix deps.get
+      
+      - name: Run tests
+        run: mix test
+      
+      - name: Publish to Hex
+        env:
+          HEX_API_KEY: ${{ secrets.HEX_API_KEY }}
+        run: mix hex.publish --yes

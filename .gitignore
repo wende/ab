@@ -30,6 +30,7 @@ iex_sandbox-*.tar
 
 # Elixir LS
 .elixir-ls/
+.elixir_ls/
 
 
 # ASDF

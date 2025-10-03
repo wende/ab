@@ -45,6 +45,12 @@ defmodule ExampleFunctionsTest do
 
     # Tests atom operations
     property_test(ExampleFunctions, :atom_to_string)
+
+    # Tests struct handling
+    property_test(ExampleFunctions, :get_user_name)
+
+    # Tests struct creation
+    property_test(ExampleFunctions, :create_user)
   end
 
   describe "robust_test - ensures functions handle invalid inputs gracefully" do
@@ -59,6 +65,7 @@ defmodule ExampleFunctionsTest do
     robust_test(ExampleFunctions, :list_length)
     robust_test(ExampleFunctions, :negate)
     robust_test(ExampleFunctions, :atom_to_string)
+    robust_test(ExampleFunctions, :get_user_name)
   end
 
   describe "compare_test - validates two implementations behave identically" do

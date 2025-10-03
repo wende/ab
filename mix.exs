@@ -16,7 +16,7 @@ defmodule AB.MixProject do
       description: description(),
       package: package(),
       docs: docs(),
-      source_url: "https://github.com/yourusername/ab"
+      source_url: "https://github.com/wende/ab"
     ]
   end
 
@@ -38,10 +38,6 @@ defmodule AB.MixProject do
       # Benchmarking - performance comparison between implementations
       {:benchee, "~> 1.3"},
       {:benchee_html, "~> 1.0"},
-
-      # Utilities
-      {:jason, "~> 1.4"},
-      {:decimal, "~> 2.0"},
 
       # Development and documentation
       {:ex_doc, "~> 0.31", only: :dev, runtime: false},
@@ -68,10 +64,10 @@ defmodule AB.MixProject do
     [
       licenses: ["MIT"],
       links: %{
-        "GitHub" => "https://github.com/yourusername/ab",
+        "GitHub" => "https://github.com/wende/ab",
         "Docs" => "https://hexdocs.pm/ab"
       },
-      maintainers: ["Your Name"],
+      maintainers: ["Krzysztof Wende @wende"],
       files: ~w(lib .formatter.exs mix.exs README.md LICENSE)
     ]
   end
@@ -80,8 +76,8 @@ defmodule AB.MixProject do
     [
       main: "readme",
       extras: ["README.md"],
-      source_url: "https://github.com/yourusername/ab",
-      homepage_url: "https://github.com/yourusername/ab",
+      source_url: "https://github.com/wende/ab",
+      homepage_url: "https://github.com/wende/ab",
       formatters: ["html"]
     ]
   end

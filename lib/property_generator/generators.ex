@@ -110,6 +110,44 @@ defmodule PropertyGenerator.Generators do
     StreamData.string(:printable)
   end
 
+  def type_to_generator({:remote_type, _, [{:atom, _, module}, {:atom, _, :t}, []]}) do
+    # Handle remote type references like User.t()
+    case Code.ensure_loaded(module) do
+      {:module, ^module} ->
+        case Code.Typespec.fetch_types(module) do
+          {:ok, types} ->
+            # Find the @type t definition
+            type_def =
+              Enum.find_value(types, fn
+                {:type, {:t, type_ast, []}} -> type_ast
+                _ -> nil
+              end)
+
+            case type_def do
+              {:type, _, :map, field_types} ->
+                # It's a struct type, generate it
+                type_to_generator({:type, 0, :map, field_types})
+
+              nil ->
+                IO.warn("Could not find @type t for module #{module}, using StreamData.term()")
+                StreamData.term()
+
+              other_type ->
+                # It's some other type, generate it
+                type_to_generator(other_type)
+            end
+
+          _ ->
+            IO.warn("Could not fetch types for module #{module}, using StreamData.term()")
+            StreamData.term()
+        end
+
+      _ ->
+        IO.warn("Could not load module #{module}, using StreamData.term()")
+        StreamData.term()
+    end
+  end
+
   def type_to_generator(type) do
     IO.warn("Unknown type #{inspect(type)}, using StreamData.term()")
     StreamData.term()
@@ -171,4 +209,3 @@ defmodule PropertyGenerator.Generators do
     )
   end
 end
-

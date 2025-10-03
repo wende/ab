@@ -172,6 +172,19 @@ defmodule PropertyGenerator.InvalidGenerators do
     non_string_types()
   end
 
+  def type_to_invalid_generator({:remote_type, _, [{:atom, _, _module}, {:atom, _, :t}, []]}) do
+    # For custom types like User.t(), generate invalid types (anything except the struct itself)
+    # This will generate non-struct types that should fail the function
+    StreamData.one_of([
+      StreamData.integer(),
+      StreamData.float(),
+      StreamData.string(:printable),
+      StreamData.atom(:alphanumeric),
+      StreamData.list_of(StreamData.term()),
+      StreamData.map_of(StreamData.atom(:alphanumeric), StreamData.term())
+    ])
+  end
+
   def type_to_invalid_generator(type) do
     IO.warn("Unknown type #{inspect(type)}, using generic invalid generator")
     generic_invalid_types()
@@ -265,4 +278,3 @@ defmodule PropertyGenerator.InvalidGenerators do
     StreamData.map_of(StreamData.atom(:alphanumeric), StreamData.term())
   end
 end
-

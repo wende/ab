@@ -156,11 +156,14 @@ The macro will:
 5. Test type consistency between `@type` and `@spec`
 
 **Supported types:**
-- Basic: `integer()`, `float()`, `boolean()`, `atom()`, `binary()`, `String.t()`
-- Collections: `list(type)`, `tuple({type1, type2})`, `map()`
-- Ranges: `0..100`, `pos_integer()`, `non_neg_integer()`
+- Basic: `integer()`, `float()`, `boolean()`, `atom()`, `binary()`, `bitstring()`, `String.t()`, `charlist()`, `nil`
+- Collections: `list(type)`, `tuple({type1, type2})`, `map()`, keyword lists
+- Ranges: `0..100`, `pos_integer()`, `non_neg_integer()`, `neg_integer()`
+- Structs: Custom struct types with `@type t :: %__MODULE__{...}`
 - Union types: `integer() | String.t()`
-- Complex: Nested structures, custom types
+- Literals: Specific atom or integer values (e.g., `:ok`, `42`)
+- Generic: `any()`, `term()`
+- Complex: Nested structures, remote types
 
 ### `robust_test/2` - Verify Error Handling
 
@@ -415,11 +418,11 @@ benchmark_test {Parser, :parse_legacy}, {Parser, :parse_optimized}
 compare_test {Search, :binary_search}, {Search, :interpolation_search}
 ```
 
-### Migration Validation
+### Data Encoding Comparison
 
 ```elixir
-# Ensure new caching strategy matches old behavior
-compare_test {Cache, :old_strategy}, {Cache, :new_strategy}
+# Compare JSON encoding libraries
+compare_test {Encoder, :encode_with_jason}, {Encoder, :encode_with_poison}
 ```
 
 ## Dependencies

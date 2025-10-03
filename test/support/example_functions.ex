@@ -3,6 +3,17 @@ defmodule ExampleFunctions do
   Example functions with various typespecs to demonstrate PropertyGenerator capabilities.
   """
 
+  defmodule User do
+    @moduledoc "Example struct for testing struct type support"
+    defstruct [:name, :age, :email]
+
+    @type t :: %__MODULE__{
+            name: String.t(),
+            age: non_neg_integer(),
+            email: String.t()
+          }
+  end
+
   @doc "Simple integer addition"
   @spec add_integers(integer(), integer()) :: integer()
   def add_integers(a, b), do: a + b
@@ -43,4 +54,12 @@ defmodule ExampleFunctions do
   @doc "Atom to string conversion"
   @spec atom_to_string(atom()) :: String.t()
   def atom_to_string(atom), do: Atom.to_string(atom)
+
+  @doc "Struct handling - returns the user's name"
+  @spec get_user_name(User.t()) :: String.t()
+  def get_user_name(%User{name: name}), do: name
+
+  @doc "Struct creation"
+  @spec create_user(String.t(), non_neg_integer()) :: User.t()
+  def create_user(name, age), do: %User{name: name, age: age, email: "#{name}@example.com"}
 end

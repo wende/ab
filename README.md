@@ -163,13 +163,16 @@ The macro will:
 
 **Supported types:**
 - Basic: `integer()`, `float()`, `boolean()`, `atom()`, `binary()`, `bitstring()`, `String.t()`, `charlist()`, `nil`
-- Collections: `list(type)`, `tuple({type1, type2})`, `map()`, keyword lists
+- Collections: `list(type)`, `tuple({type1, type2})`, `map()`, `keyword()`, `keyword(type)`
+- Maps: `%{key => value}`, `%{required(:key) => type}`, `%{optional(:key) => type}` (optional fields don't cause validation failures)
 - Ranges: `0..100`, `pos_integer()`, `non_neg_integer()`, `neg_integer()`
 - Structs: Custom struct types with `@type t :: %__MODULE__{...}`
 - Union types: `integer() | String.t()`
 - Literals: Specific atom or integer values (e.g., `:ok`, `42`)
 - Generic: `any()`, `term()`
 - Complex: Nested structures, remote types
+
+**Note:** Maps with optional fields and extra keys are properly handled - only required fields must be present.
 
 ### `robust_test/2` - Verify Error Handling
 
@@ -291,11 +294,23 @@ PropertyGenerator.types_equivalent?(type1, type2)
 
 ### `PropertyGenerator.infer_result_type/1`
 
-Get human-readable type name from a value:
+Get detailed type information from a value:
 
 ```elixir
 PropertyGenerator.infer_result_type([1, 2, 3])
-# => "list"
+# => "list(integer())"
+
+PropertyGenerator.infer_result_type(%{name: "Alice", age: 30})
+# => "%{age: integer(), name: binary()}"
+
+PropertyGenerator.infer_result_type({:ok, true})
+# => "{atom(), boolean()}"
+
+PropertyGenerator.infer_result_type([])
+# => "list(term())"  # unknown element type
+
+PropertyGenerator.infer_result_type([1, "a"])
+# => "list(term())"  # inconsistent types
 ```
 
 ## Real-World Examples

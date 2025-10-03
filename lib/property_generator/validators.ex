@@ -28,6 +28,28 @@ defmodule PropertyGenerator.Validators do
   def type_to_validator({:atom, _, atom_value}), do: fn value -> value == atom_value end
   def type_to_validator({:integer, _, int_value}), do: fn value -> value == int_value end
 
+  def type_to_validator({:type, _, :keyword, []}) do
+    fn value ->
+      is_list(value) and
+        Enum.all?(value, fn
+          {key, _val} when is_atom(key) -> true
+          _ -> false
+        end)
+    end
+  end
+
+  def type_to_validator({:type, _, :keyword, [value_type]}) do
+    value_validator = type_to_validator(value_type)
+
+    fn value ->
+      is_list(value) and
+        Enum.all?(value, fn
+          {key, val} when is_atom(key) -> value_validator.(val)
+          _ -> false
+        end)
+    end
+  end
+
   def type_to_validator({:type, _, :charlist, []}) do
     fn value -> is_list(value) and Enum.all?(value, &is_integer/1) end
   end
@@ -131,36 +153,44 @@ defmodule PropertyGenerator.Validators do
         _ -> false
       end)
 
-    field_validators = Enum.map(other_fields, &create_field_validator/1)
+    required_validators = Enum.flat_map(other_fields, &create_field_validator/1)
 
     fn value ->
       is_struct(value, module_name) and
-        Enum.all?(field_validators, fn {field_name, validator} ->
+        Enum.all?(required_validators, fn {field_name, validator} ->
           field_value = Map.get(value, field_name)
           validator.(field_value)
         end)
     end
   end
 
-  defp create_field_validator({:type, _, field_type, [{:atom, _, field_name}, value_type]})
-       when field_type in [:map_field_exact, :map_field_assoc] do
+  defp create_field_validator({:type, _, :map_field_exact, [{:atom, _, field_name}, value_type]}) do
+    # Required field
     value_validator = type_to_validator(value_type)
-    {field_name, value_validator}
+    [{field_name, value_validator}]
+  end
+
+  defp create_field_validator({:type, _, :map_field_assoc, [_key_type, _value_type]}) do
+    # Optional field - don't validate
+    []
   end
 
   defp validate_map(field_types) do
-    field_validators =
-      Enum.map(field_types, fn
-        {:type, _, field_type, [key_type, value_type]}
-        when field_type in [:map_field_exact, :map_field_assoc] ->
-          key_validator = type_to_validator(key_type)
-          value_validator = type_to_validator(value_type)
-          {key_validator, value_validator}
+    # Separate required and optional fields
+    required_fields =
+      field_types
+      |> Enum.filter(fn
+        {:type, _, :map_field_exact, _} -> true
+        _ -> false
+      end)
+      |> Enum.map(fn {:type, _, :map_field_exact, [key_type, value_type]} ->
+        {type_to_validator(key_type), type_to_validator(value_type)}
       end)
 
     fn map ->
       is_map(map) and
-        Enum.all?(field_validators, fn {key_validator, value_validator} ->
+        Enum.all?(required_fields, fn {key_validator, value_validator} ->
+          # Check that at least one key-value pair matches this required field
           Enum.any?(map, fn {key, value} ->
             key_validator.(key) and value_validator.(value)
           end)

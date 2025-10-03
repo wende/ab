@@ -90,12 +90,31 @@ defmodule ExampleFunctionsTest do
     end
 
     test "infer_result_type correctly identifies types" do
-      assert PropertyGenerator.infer_result_type(42) == "integer"
-      assert PropertyGenerator.infer_result_type("hello") == "binary/string"
-      assert PropertyGenerator.infer_result_type([1, 2, 3]) == "list"
-      assert PropertyGenerator.infer_result_type(%{a: 1}) == "map"
-      assert PropertyGenerator.infer_result_type({:ok, "value"}) == "tuple"
-      assert PropertyGenerator.infer_result_type(:atom) == "atom"
+      # Basic types
+      assert PropertyGenerator.infer_result_type(42) == "integer()"
+      assert PropertyGenerator.infer_result_type(3.14) == "float()"
+      assert PropertyGenerator.infer_result_type("hello") == "binary()"
+      assert PropertyGenerator.infer_result_type(:atom) == "atom()"
+      assert PropertyGenerator.infer_result_type(true) == "boolean()"
+      assert PropertyGenerator.infer_result_type(false) == "boolean()"
+
+      # Lists
+      assert PropertyGenerator.infer_result_type([1, 2, 3]) == "list(integer())"
+      assert PropertyGenerator.infer_result_type([]) == "list(term())"
+      assert PropertyGenerator.infer_result_type([1, "a"]) == "list(term())"
+      assert PropertyGenerator.infer_result_type([true, false]) == "list(boolean())"
+
+      # Maps
+      assert PropertyGenerator.infer_result_type(%{}) == "map()"
+      assert PropertyGenerator.infer_result_type(%{a: 1}) == "%{a: integer()}"
+
+      assert PropertyGenerator.infer_result_type(%{a: 1, b: "string"}) ==
+               "%{a: integer(), b: binary()}"
+
+      assert PropertyGenerator.infer_result_type(%{"key" => 1}) == "%{binary() => integer()}"
+
+      # Tuples
+      assert PropertyGenerator.infer_result_type({:ok, "value"}) == "{atom(), binary()}"
     end
 
     test "types_equivalent? compares types correctly" do

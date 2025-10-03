@@ -603,13 +603,88 @@ defmodule PropertyGenerator do
   """
   def infer_result_type(result) do
     cond do
-      is_integer(result) -> "integer"
-      is_atom(result) -> "atom"
-      is_binary(result) -> "binary/string"
-      is_list(result) -> "list"
-      is_map(result) -> "map"
-      is_tuple(result) -> "tuple"
-      true -> "#{inspect(:erlang.element(1, result))}"
+      is_boolean(result) -> "boolean()"
+      is_integer(result) -> "integer()"
+      is_float(result) -> "float()"
+      is_atom(result) -> "atom()"
+      is_binary(result) -> "binary()"
+      is_list(result) -> infer_list_type(result)
+      is_map(result) -> infer_map_type(result)
+      is_tuple(result) -> infer_tuple_type(result)
+      true -> "term()"
+    end
+  end
+
+  defp infer_list_type([]), do: "list(term())"
+
+  defp infer_list_type(list) do
+    element_types = list |> Enum.map(&infer_result_type/1) |> Enum.uniq()
+
+    case element_types do
+      [single_type] -> "list(#{single_type})"
+      _ -> "list(term())"
+    end
+  end
+
+  defp infer_map_type(map) when map == %{}, do: "map()"
+
+  defp infer_map_type(map) do
+    # Check if it's a struct
+    case Map.get(map, :__struct__) do
+      nil ->
+        infer_regular_map_type(map)
+
+      struct_name ->
+        "%#{inspect(struct_name)}{}"
+    end
+  end
+
+  defp infer_regular_map_type(map) do
+    entries = Map.to_list(map)
+    key_types = entries |> Enum.map(fn {k, _v} -> infer_result_type(k) end) |> Enum.uniq()
+    value_types = entries |> Enum.map(fn {_k, v} -> infer_result_type(v) end) |> Enum.uniq()
+
+    cond do
+      # Small map with atom keys - show specific keys
+      length(entries) <= 5 and key_types == ["atom()"] ->
+        infer_map_with_specific_keys(entries)
+
+      # Consistent key and value types - show pattern
+      length(key_types) == 1 and length(value_types) == 1 ->
+        "%{#{hd(key_types)} => #{hd(value_types)}}"
+
+      # Consistent key type but mixed values
+      length(key_types) == 1 ->
+        "%{#{hd(key_types)} => term()}"
+
+      # Mixed keys and values
+      true ->
+        "map()"
+    end
+  end
+
+  defp infer_map_with_specific_keys(entries) do
+    fields =
+      entries
+      |> Enum.sort_by(fn {k, _v} -> k end)
+      |> Enum.map(fn {key, value} ->
+        "#{key}: #{infer_result_type(value)}"
+      end)
+      |> Enum.join(", ")
+
+    "%{#{fields}}"
+  end
+
+  defp infer_tuple_type(tuple) do
+    elements = Tuple.to_list(tuple)
+
+    case elements do
+      [] ->
+        "{}"
+
+      _ ->
+        element_types = Enum.map(elements, &infer_result_type/1)
+        "{#{Enum.join(element_types, ", ")}}"
     end
   end
 

@@ -41,6 +41,18 @@ defmodule PropertyGenerator.Generators do
   def type_to_generator({:atom, _, atom_value}), do: StreamData.constant(atom_value)
   def type_to_generator({:integer, _, int_value}), do: StreamData.constant(int_value)
 
+  def type_to_generator({:type, _, :keyword, []}) do
+    # Generate keyword list with any atom keys and term values
+    StreamData.list_of(StreamData.tuple({StreamData.atom(:alphanumeric), StreamData.term()}))
+  end
+
+  def type_to_generator({:type, _, :keyword, [value_type]}) do
+    # Generate keyword list with any atom keys and typed values
+    value_gen = type_to_generator(value_type)
+
+    StreamData.list_of(StreamData.tuple({StreamData.atom(:alphanumeric), value_gen}))
+  end
+
   def type_to_generator({:type, _, :charlist, []}) do
     StreamData.list_of(StreamData.integer(0..1_114_111))
   end

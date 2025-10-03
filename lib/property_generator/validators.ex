@@ -168,4 +168,3 @@ defmodule PropertyGenerator.Validators do
     end
   end
 end
-

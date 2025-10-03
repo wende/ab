@@ -28,6 +28,13 @@ iex_sandbox-*.tar
 # Livebook files
 *.livemd~
 
+# Elixir LS
+.elixir-ls/
+
+
+# ASDF
+.tool-versions
+
 # OS generated files
 .DS_Store
 .DS_Store?

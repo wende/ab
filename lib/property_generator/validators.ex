@@ -6,6 +6,7 @@ defmodule PropertyGenerator.Validators do
   @doc """
   Creates an output validator from a type specification.
   """
+  @spec create_output_validator(any()) :: (any() -> boolean())
   def create_output_validator(output_type) do
     type_to_validator(output_type)
   end
@@ -13,6 +14,7 @@ defmodule PropertyGenerator.Validators do
   @doc """
   Converts a type specification to a validator function.
   """
+  @spec type_to_validator(any()) :: (any() -> boolean())
   def type_to_validator({:type, _, :integer, []}), do: &is_integer/1
   def type_to_validator({:type, _, :float, []}), do: &is_float/1
   def type_to_validator({:type, _, :number, []}), do: &is_number/1
@@ -141,10 +143,14 @@ defmodule PropertyGenerator.Validators do
 
   # Private helper functions
 
+  @spec extract_integer_value(any(), integer()) :: integer()
   defp extract_integer_value({:integer, _, val}, _default), do: val
+  @spec extract_integer_value(any(), integer()) :: integer()
   defp extract_integer_value(val, _default) when is_integer(val), do: val
+  @spec extract_integer_value(any(), integer()) :: integer()
   defp extract_integer_value(_val, default), do: default
 
+  @spec find_struct_field([any()]) :: any() | nil
   defp find_struct_field(field_types) do
     Enum.find(field_types, fn
       {:type, _, :map_field_exact, [{:atom, _, :__struct__}, {:atom, _, _module}]} -> true
@@ -152,12 +158,14 @@ defmodule PropertyGenerator.Validators do
     end)
   end
 
+  @spec validate_tuple_elements(tuple(), [(any() -> boolean())]) :: boolean()
   defp validate_tuple_elements(tuple, validators) do
     validators
     |> Enum.with_index()
     |> Enum.all?(fn {validator, index} -> validator.(elem(tuple, index)) end)
   end
 
+  @spec validate_struct(atom(), [any()]) :: (any() -> boolean())
   defp validate_struct(module_name, field_types) do
     other_fields =
       Enum.reject(field_types, fn
@@ -176,17 +184,20 @@ defmodule PropertyGenerator.Validators do
     end
   end
 
+  @spec create_field_validator(any()) :: [{atom(), (any() -> boolean())}]
   defp create_field_validator({:type, _, :map_field_exact, [{:atom, _, field_name}, value_type]}) do
     # Required field
     value_validator = type_to_validator(value_type)
     [{field_name, value_validator}]
   end
 
+  @spec create_field_validator(any()) :: [{atom(), (any() -> boolean())}]
   defp create_field_validator({:type, _, :map_field_assoc, [_key_type, _value_type]}) do
     # Optional field - don't validate
     []
   end
 
+  @spec validate_map([any()]) :: (any() -> boolean())
   defp validate_map(field_types) do
     # Separate required and optional fields
     required_fields =

@@ -103,13 +103,19 @@ defmodule StatistexTypespecTest do
           IO.puts("Testing generator for Statistex.sample_size/1:")
 
           try do
-            input_gen = PropertyGenerator.Generators.create_input_generator(input_types, Statistex)
+            input_gen =
+              PropertyGenerator.Generators.create_input_generator(input_types, Statistex)
+
             samples = Enum.take(input_gen, 3)
             IO.puts("  ✓ Generated samples:")
+
             for sample <- samples do
               IO.puts("    #{inspect(sample)}")
             end
-            IO.puts("\n  Note: Type alias 'samples' resolved to list of 'sample' which resolved to 'number'")
+
+            IO.puts(
+              "\n  Note: Type alias 'samples' resolved to list of 'sample' which resolved to 'number'"
+            )
           rescue
             e ->
               IO.puts("  ⚠ Generator failed: #{inspect(e)}")

@@ -10,6 +10,7 @@ defmodule PropertyGenerator.InvalidGenerators do
   Creates invalid input generators from type specifications.
   Returns a generator that produces lists of invalid arguments.
   """
+  @spec create_invalid_input_generator([any()]) :: any()
   def create_invalid_input_generator(input_types) do
     invalid_generators = Enum.map(input_types, &type_to_invalid_generator/1)
 
@@ -29,6 +30,7 @@ defmodule PropertyGenerator.InvalidGenerators do
   @doc """
   Converts a type specification to an invalid StreamData generator.
   """
+  @spec type_to_invalid_generator(any()) :: any()
   def type_to_invalid_generator({:type, _, :integer, []}) do
     non_integer_types()
   end
@@ -228,6 +230,7 @@ defmodule PropertyGenerator.InvalidGenerators do
 
   # Private helper functions for common invalid type generators
 
+  @spec non_integer_types() :: any()
   defp non_integer_types do
     StreamData.one_of([
       StreamData.float(),
@@ -238,6 +241,7 @@ defmodule PropertyGenerator.InvalidGenerators do
     ])
   end
 
+  @spec non_binary_types() :: any()
   defp non_binary_types do
     StreamData.one_of([
       StreamData.integer(),
@@ -248,6 +252,7 @@ defmodule PropertyGenerator.InvalidGenerators do
     ])
   end
 
+  @spec non_atom_types() :: any()
   defp non_atom_types do
     StreamData.one_of([
       StreamData.integer(),
@@ -258,6 +263,7 @@ defmodule PropertyGenerator.InvalidGenerators do
     ])
   end
 
+  @spec non_string_types() :: any()
   defp non_string_types do
     StreamData.one_of([
       StreamData.integer(),
@@ -268,6 +274,7 @@ defmodule PropertyGenerator.InvalidGenerators do
     ])
   end
 
+  @spec non_list_types() :: any()
   defp non_list_types do
     StreamData.one_of([
       StreamData.integer(),
@@ -278,6 +285,7 @@ defmodule PropertyGenerator.InvalidGenerators do
     ])
   end
 
+  @spec non_tuple_types() :: any()
   defp non_tuple_types do
     StreamData.one_of([
       StreamData.integer(),
@@ -289,6 +297,7 @@ defmodule PropertyGenerator.InvalidGenerators do
     ])
   end
 
+  @spec non_map_types() :: any()
   defp non_map_types do
     StreamData.one_of([
       StreamData.integer(),
@@ -299,6 +308,7 @@ defmodule PropertyGenerator.InvalidGenerators do
     ])
   end
 
+  @spec generic_invalid_types() :: any()
   defp generic_invalid_types do
     StreamData.one_of([
       StreamData.integer(),
@@ -310,6 +320,7 @@ defmodule PropertyGenerator.InvalidGenerators do
     ])
   end
 
+  @spec generic_map() :: any()
   defp generic_map do
     StreamData.map_of(StreamData.atom(:alphanumeric), StreamData.term())
   end

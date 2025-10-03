@@ -38,11 +38,13 @@ defmodule PropertyGenerator do
 
   This will generate a property test that validates the function behavior.
   """
+  @spec property_test(module(), atom(), keyword()) :: Macro.t()
   defmacro property_test(module, function_name, opts \\ []) do
     quoted_test = property_test_quoted(module, function_name, opts)
     quote do: unquote(quoted_test)
   end
 
+  @spec property_test_quoted(module(), atom(), keyword()) :: Macro.t()
   defp property_test_quoted(module, function_name, opts) do
     quote do
       property unquote("#{function_name} satisfies its typespec") do
@@ -60,6 +62,7 @@ defmodule PropertyGenerator do
   end
 
   @doc false
+  @spec run_property_test(module(), atom(), keyword()) :: :ok
   def run_property_test(module, function_name, opts) do
     case get_function_spec(module, function_name) do
       {:ok, {input_types, output_type}} ->
@@ -70,6 +73,7 @@ defmodule PropertyGenerator do
     end
   end
 
+  @spec run_property_test_with_spec(module(), atom(), [any()], any(), keyword()) :: :ok
   defp run_property_test_with_spec(module, function_name, input_types, output_type, opts) do
     input_generator = create_input_generator_runtime(input_types, module)
     output_validator = create_output_validator_runtime(output_type)
@@ -93,12 +97,15 @@ defmodule PropertyGenerator do
     end
   end
 
+  @spec maybe_log_verbose(boolean(), any(), any()) :: :ok
   defp maybe_log_verbose(true, input, result) do
     IO.puts("Input: #{inspect(input)} -> Output: #{inspect(result)}")
   end
 
+  @spec maybe_log_verbose(boolean(), any(), any()) :: :ok
   defp maybe_log_verbose(false, _input, _result), do: :ok
 
+  @spec validate_output_or_flunk(any(), (any() -> boolean()), any()) :: :ok
   defp validate_output_or_flunk(result, output_validator, output_type) do
     if output_validator.(result) do
       :ok
@@ -127,11 +134,13 @@ defmodule PropertyGenerator do
 
   This will generate a property test that validates both functions behave identically.
   """
+  @spec compare_test({module(), atom()}, {module(), atom()}, keyword()) :: Macro.t()
   defmacro compare_test({module1, function1}, {module2, function2}, opts \\ []) do
     quoted_test = compare_test_quoted(module1, function1, module2, function2, opts)
     quote do: unquote(quoted_test)
   end
 
+  @spec compare_test_quoted(module(), atom(), module(), atom(), keyword()) :: Macro.t()
   defp compare_test_quoted(module1, function1, module2, function2, opts) do
     quote do
       property unquote("#{function1} and #{function2} produce identical results") do
@@ -147,6 +156,7 @@ defmodule PropertyGenerator do
   end
 
   @doc false
+  @spec run_compare_test(module(), atom(), module(), atom(), keyword()) :: :ok
   def run_compare_test(module1, function1, module2, function2, opts) do
     with {:ok, spec1} <- get_function_spec(module1, function1),
          {:ok, spec2} <- get_function_spec(module2, function2) do
@@ -157,6 +167,15 @@ defmodule PropertyGenerator do
     end
   end
 
+  @spec run_compare_test_with_specs(
+          module(),
+          atom(),
+          module(),
+          atom(),
+          {[any()], any()},
+          {[any()], any()},
+          keyword()
+        ) :: :ok
   defp run_compare_test_with_specs(
          module1,
          function1,
@@ -176,6 +195,7 @@ defmodule PropertyGenerator do
     run_comparison_check(module1, function1, module2, function2, input_types1, output_type1, opts)
   end
 
+  @spec run_comparison_check(module(), atom(), module(), atom(), [any()], any(), keyword()) :: :ok
   defp run_comparison_check(
          module1,
          function1,
@@ -229,14 +249,21 @@ defmodule PropertyGenerator do
     end
   end
 
+  @spec maybe_log_comparison(boolean(), any(), module(), atom(), any(), module(), atom(), any()) ::
+          :ok
   defp maybe_log_comparison(true, input, module1, function1, result1, module2, function2, result2) do
     IO.puts("Input: #{inspect(input)}")
     IO.puts("  #{module1}.#{function1}: #{inspect(result1)}")
     IO.puts("  #{module2}.#{function2}: #{inspect(result2)}")
   end
 
+  @spec maybe_log_comparison(boolean(), any(), module(), atom(), any(), module(), atom(), any()) ::
+          :ok
   defp maybe_log_comparison(false, _input, _m1, _f1, _r1, _m2, _f2, _r2), do: :ok
 
+  @spec assert_outputs_valid(module(), atom(), any(), module(), atom(), any(), (any() ->
+                                                                                  boolean())) ::
+          :ok
   defp assert_outputs_valid(module1, function1, result1, module2, function2, result2, validator) do
     assert validator.(result1),
            "#{module1}.#{function1} output #{inspect(result1)} does not match expected type"
@@ -245,6 +272,7 @@ defmodule PropertyGenerator do
            "#{module2}.#{function2} output #{inspect(result2)} does not match expected type"
   end
 
+  @spec assert_results_equal(any(), any()) :: :ok
   defp assert_results_equal(result1, result2) do
     assert result1 == result2,
            "Functions produced different results: #{inspect(result1)} != #{inspect(result2)}"
@@ -266,11 +294,13 @@ defmodule PropertyGenerator do
 
   This will generate a benchmark test that compares performance of both functions.
   """
+  @spec benchmark_test({module(), atom()}, {module(), atom()}, keyword()) :: Macro.t()
   defmacro benchmark_test({module1, function1}, {module2, function2}, opts \\ []) do
     quoted_test = benchmark_test_quoted(module1, function1, module2, function2, opts)
     quote do: unquote(quoted_test)
   end
 
+  @spec benchmark_test_quoted(module(), atom(), module(), atom(), keyword()) :: Macro.t()
   defp benchmark_test_quoted(module1, function1, module2, function2, opts) do
     quote do
       test unquote("benchmark #{function1} vs #{function2}") do
@@ -286,6 +316,7 @@ defmodule PropertyGenerator do
   end
 
   @doc false
+  @spec run_benchmark_test(module(), atom(), module(), atom(), keyword()) :: :ok
   def run_benchmark_test(module1, function1, module2, function2, opts) do
     with {:ok, spec1} <- get_function_spec(module1, function1),
          {:ok, spec2} <- get_function_spec(module2, function2) do
@@ -296,6 +327,15 @@ defmodule PropertyGenerator do
     end
   end
 
+  @spec run_benchmark_test_with_specs(
+          module(),
+          atom(),
+          module(),
+          atom(),
+          {[any()], any()},
+          {[any()], any()},
+          keyword()
+        ) :: Benchee.Suite.t()
   defp run_benchmark_test_with_specs(
          module1,
          function1,
@@ -315,6 +355,7 @@ defmodule PropertyGenerator do
     run_benchee(module1, function1, module2, function2, input_types1, opts)
   end
 
+  @spec run_benchee(module(), atom(), module(), atom(), [any()], keyword()) :: Benchee.Suite.t()
   defp run_benchee(module1, function1, module2, function2, input_types, opts) do
     input_generator = create_input_generator_runtime(input_types, module1)
     test_inputs = Enum.take(input_generator, 100)
@@ -353,12 +394,14 @@ defmodule PropertyGenerator do
       # This will fail if @type t :: %AB{a: atom()} but @spec expects integer()
       validate_struct_consistency AB
   """
+  @spec validate_struct_consistency(module()) :: Macro.t()
   defmacro validate_struct_consistency(module) do
     module_name = extract_module_name(module)
     quoted_test = validate_struct_consistency_quoted(module, module_name)
     quote do: unquote(quoted_test)
   end
 
+  @spec extract_module_name(module() | Macro.t()) :: atom()
   defp extract_module_name(module) do
     case module do
       {:__aliases__, _, [name]} -> name
@@ -367,6 +410,7 @@ defmodule PropertyGenerator do
     end
   end
 
+  @spec validate_struct_consistency_quoted(module(), atom()) :: Macro.t()
   defp validate_struct_consistency_quoted(module, module_name) do
     quote do
       test unquote("#{module_name} struct type consistency") do
@@ -376,6 +420,7 @@ defmodule PropertyGenerator do
   end
 
   @doc false
+  @spec run_struct_consistency_validation(module()) :: :ok
   def run_struct_consistency_validation(module) do
     case Code.ensure_loaded(module) do
       {:module, _} ->
@@ -386,6 +431,7 @@ defmodule PropertyGenerator do
     end
   end
 
+  @spec validate_module_struct_consistency(module()) :: :ok
   defp validate_module_struct_consistency(module) do
     with {:ok, types} <- Code.Typespec.fetch_types(module),
          true <- has_struct_type?(types),
@@ -396,6 +442,7 @@ defmodule PropertyGenerator do
     end
   end
 
+  @spec has_struct_type?([any()]) :: boolean()
   defp has_struct_type?(types) do
     Enum.any?(types, fn
       {:type, {:t, _, []}} -> true
@@ -403,12 +450,14 @@ defmodule PropertyGenerator do
     end)
   end
 
+  @spec validate_each_spec(module(), [any()]) :: :ok
   defp validate_each_spec(module, specs) do
     Enum.each(specs, fn {{function_name, _arity}, [spec | _]} ->
       validate_spec_against_type(module, function_name, spec)
     end)
   end
 
+  @spec validate_spec_against_type(module(), atom(), any()) :: :ok
   defp validate_spec_against_type(module, function_name, spec) do
     case parse_spec(spec) do
       {:ok, {[_input_type], _output_type}} ->
@@ -419,6 +468,7 @@ defmodule PropertyGenerator do
     end
   end
 
+  @spec validate_function_with_generated_struct(module(), atom()) :: :ok
   defp validate_function_with_generated_struct(module, function_name) do
     case create_struct_from_type_definition(module) do
       nil ->
@@ -429,6 +479,7 @@ defmodule PropertyGenerator do
     end
   end
 
+  @spec test_struct_against_function(module(), atom(), Enumerable.t()) :: :ok
   defp test_struct_against_function(module, function_name, gen) do
     test_input = gen |> Enum.take(1) |> List.first()
 
@@ -460,11 +511,13 @@ defmodule PropertyGenerator do
 
   This will generate tests that verify the function properly rejects invalid input.
   """
+  @spec robust_test(module(), atom(), keyword()) :: Macro.t()
   defmacro robust_test(module, function_name, opts \\ []) do
     quoted_test = robust_test_quoted(module, function_name, opts)
     quote do: unquote(quoted_test)
   end
 
+  @spec robust_test_quoted(module(), atom(), keyword()) :: Macro.t()
   defp robust_test_quoted(module, function_name, opts) do
     quote do
       property unquote("#{function_name} properly rejects invalid input") do
@@ -478,6 +531,7 @@ defmodule PropertyGenerator do
   end
 
   @doc false
+  @spec run_robust_test(module(), atom(), keyword()) :: :ok
   def run_robust_test(module, function_name, opts) do
     case get_function_spec(module, function_name) do
       {:ok, {input_types, _output_type}} ->
@@ -488,6 +542,7 @@ defmodule PropertyGenerator do
     end
   end
 
+  @spec run_robust_test_with_spec(module(), atom(), [any()], keyword()) :: :ok
   defp run_robust_test_with_spec(module, function_name, input_types, opts) do
     invalid_input_generator = create_invalid_input_generator_runtime(input_types)
     verbose = Keyword.get(opts, :verbose, false)
@@ -508,6 +563,7 @@ defmodule PropertyGenerator do
     end
   end
 
+  @spec test_invalid_input(module(), atom(), any(), boolean()) :: :ok
   defp test_invalid_input(module, function_name, invalid_input, verbose) do
     try do
       result = apply(module, function_name, invalid_input)
@@ -521,6 +577,7 @@ defmodule PropertyGenerator do
     end
   end
 
+  @spec handle_unexpected_success(any(), any(), boolean()) :: no_return()
   defp handle_unexpected_success(invalid_input, result, verbose) do
     if verbose do
       IO.puts("Invalid input: #{inspect(invalid_input)} -> Output: #{inspect(result)}")
@@ -531,12 +588,14 @@ defmodule PropertyGenerator do
     )
   end
 
+  @spec handle_expected_exception(any(), Exception.t(), boolean()) :: :ok
   defp handle_expected_exception(invalid_input, exception, true) do
     IO.puts(
       "Invalid input: #{inspect(invalid_input)} -> Exception: #{Exception.message(exception)} ✓"
     )
   end
 
+  @spec handle_expected_exception(any(), Exception.t(), boolean()) :: :ok
   defp handle_expected_exception(_invalid_input, _exception, false), do: :ok
 
   # Public API functions delegating to submodules
@@ -554,16 +613,19 @@ defmodule PropertyGenerator do
   defdelegate parse_spec(spec), to: TypeParser, as: :parse_spec
 
   @doc "Creates input generators from type specifications. Optionally accepts a module to resolve user-defined type aliases."
+  @spec create_input_generator_runtime([any()], module() | nil) :: Enumerable.t()
   def create_input_generator_runtime(input_types, module \\ nil) do
     Generators.create_input_generator(input_types, module)
   end
 
   @doc "Creates output validators from type specifications."
+  @spec create_output_validator_runtime(any()) :: (any() -> boolean())
   def create_output_validator_runtime(output_type) do
     Validators.create_output_validator(output_type)
   end
 
   @doc "Creates invalid input generators from type specifications."
+  @spec create_invalid_input_generator_runtime([any()]) :: Enumerable.t()
   def create_invalid_input_generator_runtime(input_types) do
     InvalidGenerators.create_invalid_input_generator(input_types)
   end
@@ -571,6 +633,7 @@ defmodule PropertyGenerator do
   @doc """
   Validates type consistency between @type definitions and @spec definitions.
   """
+  @spec validate_type_consistency(module(), atom()) :: :ok
   def validate_type_consistency(module, function_name) do
     try do
       case Code.Typespec.fetch_types(module) do
@@ -601,6 +664,7 @@ defmodule PropertyGenerator do
   @doc """
   Infers a human-readable type name from a result value.
   """
+  @spec infer_result_type(any()) :: String.t()
   def infer_result_type(result) do
     cond do
       is_boolean(result) -> "boolean()"
@@ -615,8 +679,10 @@ defmodule PropertyGenerator do
     end
   end
 
+  @spec infer_list_type([any()]) :: String.t()
   defp infer_list_type([]), do: "list(term())"
 
+  @spec infer_list_type([any()]) :: String.t()
   defp infer_list_type(list) do
     element_types = list |> Enum.map(&infer_result_type/1) |> Enum.uniq()
 
@@ -626,8 +692,10 @@ defmodule PropertyGenerator do
     end
   end
 
+  @spec infer_map_type(map()) :: String.t()
   defp infer_map_type(map) when map == %{}, do: "map()"
 
+  @spec infer_map_type(map()) :: String.t()
   defp infer_map_type(map) do
     # Check if it's a struct
     case Map.get(map, :__struct__) do
@@ -639,6 +707,7 @@ defmodule PropertyGenerator do
     end
   end
 
+  @spec infer_regular_map_type(map()) :: String.t()
   defp infer_regular_map_type(map) do
     entries = Map.to_list(map)
     key_types = entries |> Enum.map(fn {k, _v} -> infer_result_type(k) end) |> Enum.uniq()
@@ -663,6 +732,7 @@ defmodule PropertyGenerator do
     end
   end
 
+  @spec infer_map_with_specific_keys([{any(), any()}]) :: String.t()
   defp infer_map_with_specific_keys(entries) do
     fields =
       entries
@@ -675,6 +745,7 @@ defmodule PropertyGenerator do
     "%{#{fields}}"
   end
 
+  @spec infer_tuple_type(tuple()) :: String.t()
   defp infer_tuple_type(tuple) do
     elements = Tuple.to_list(tuple)
 
@@ -690,6 +761,7 @@ defmodule PropertyGenerator do
 
   # Private helper functions
 
+  @spec validate_struct_field_consistency(module(), atom(), [any()]) :: :ok
   defp validate_struct_field_consistency(module, function_name, type_field_types) do
     with {:ok, {[spec_input_type], spec_output_type}} <- get_function_spec(module, function_name),
          type_fields when not is_nil(type_fields) <-
@@ -702,6 +774,13 @@ defmodule PropertyGenerator do
     end
   end
 
+  @spec validate_all_fields(
+          module(),
+          atom(),
+          [{atom(), any()}] | nil,
+          %{atom() => any()} | nil,
+          any()
+        ) :: :ok
   defp validate_all_fields(module, function_name, type_fields, spec_fields, spec_output_type) do
     Enum.each(type_fields, fn {field_name, type_field_type} ->
       validate_single_field(
@@ -715,6 +794,7 @@ defmodule PropertyGenerator do
     end)
   end
 
+  @spec validate_single_field(module(), atom(), atom(), any(), %{atom() => any()}, any()) :: :ok
   defp validate_single_field(
          module,
          function_name,
@@ -742,6 +822,7 @@ defmodule PropertyGenerator do
     end
   end
 
+  @spec validate_field_type_mismatch(module(), atom(), atom(), any(), any(), any()) :: :ok
   defp validate_field_type_mismatch(
          module,
          function_name,
@@ -764,6 +845,7 @@ defmodule PropertyGenerator do
     end
   end
 
+  @spec test_field_inconsistency(module(), atom(), atom(), any(), any(), any()) :: :ok
   defp test_field_inconsistency(
          module,
          function_name,
@@ -805,6 +887,7 @@ defmodule PropertyGenerator do
     end
   end
 
+  @spec raise_type_inconsistency_error(module(), atom(), any(), any(), String.t()) :: no_return()
   defp raise_type_inconsistency_error(
          module,
          field_name,
@@ -815,26 +898,32 @@ defmodule PropertyGenerator do
     raise "Type inconsistency: @type #{module}.t defines field :#{field_name} as #{inspect(type_field_type)} but @spec expects #{inspect(spec_field_type)}. #{suffix}"
   end
 
+  @spec extract_struct_fields_from_spec(any()) :: %{atom() => any()} | nil
   defp extract_struct_fields_from_spec({:type, _, :map, field_types}) do
     TypeParser.extract_struct_fields(field_types)
   end
 
+  @spec extract_struct_fields_from_spec(any()) :: %{atom() => any()} | nil
   defp extract_struct_fields_from_spec(_), do: nil
 
   # Counter helpers for tracking successful test runs
+  @spec start_counter() :: pid()
   defp start_counter do
     {:ok, agent} = Agent.start_link(fn -> 0 end)
     agent
   end
 
+  @spec increment_counter(pid()) :: :ok
   defp increment_counter(agent) do
     Agent.update(agent, &(&1 + 1))
   end
 
+  @spec get_counter(pid()) :: non_neg_integer()
   defp get_counter(agent) do
     Agent.get(agent, & &1)
   end
 
+  @spec stop_counter(pid()) :: :ok
   defp stop_counter(agent) do
     Agent.stop(agent)
   end

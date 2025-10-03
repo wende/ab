@@ -4,7 +4,7 @@ defmodule AB.MixProject do
   def project do
     [
       app: :ab,
-      version: "0.1.0",
+      version: "0.1.3",
       elixir: "~> 1.15",
       start_permanent: Mix.env() == :prod,
       elixirc_paths: elixirc_paths(Mix.env()),
@@ -41,7 +41,8 @@ defmodule AB.MixProject do
 
       # Development and documentation
       {:ex_doc, "~> 0.31", only: :dev, runtime: false},
-      {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.4", only: [:dev], runtime: false}
     ]
   end
 

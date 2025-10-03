@@ -8,9 +8,10 @@ defmodule PropertyGenerator.Generators do
   @doc """
   Creates input generators from type specifications.
   Returns a generator that produces lists of arguments.
-  
+
   Optionally accepts a module to resolve user-defined type aliases.
   """
+  @spec create_input_generator([any()], module() | nil) :: any()
   def create_input_generator(input_types, module \\ nil) do
     generators = Enum.map(input_types, &type_to_generator(&1, module))
 
@@ -29,16 +30,20 @@ defmodule PropertyGenerator.Generators do
 
   @doc """
   Converts a type specification to a StreamData generator.
-  
+
   Optionally accepts a module to resolve user-defined type aliases.
   """
+  @spec type_to_generator(any(), module() | nil) :: any()
   def type_to_generator(type, module \\ nil)
 
   # User type resolution with module context
   def type_to_generator({:user_type, _, type_name, []}, module) when not is_nil(module) do
     case resolve_user_type(module, type_name) do
       nil ->
-        IO.warn("Cannot resolve user type :#{type_name} in module #{module}, using StreamData.term()")
+        IO.warn(
+          "Cannot resolve user type :#{type_name} in module #{module}, using StreamData.term()"
+        )
+
         StreamData.term()
 
       resolved_type ->
@@ -49,7 +54,10 @@ defmodule PropertyGenerator.Generators do
 
   # User type without module context - fallback
   def type_to_generator({:user_type, _, type_name, []}, _module) do
-    IO.warn("Cannot resolve user type :#{type_name} without module context, using StreamData.term()")
+    IO.warn(
+      "Cannot resolve user type :#{type_name} without module context, using StreamData.term()"
+    )
+
     StreamData.term()
   end
 
@@ -67,7 +75,9 @@ defmodule PropertyGenerator.Generators do
   def type_to_generator({:type, _, :any, []}, _module), do: StreamData.term()
   def type_to_generator({:type, _, :term, []}, _module), do: StreamData.term()
   def type_to_generator({:type, _, nil, []}, _module), do: StreamData.constant(nil)
-  def type_to_generator({:type, _, :no_return, []}, _module), do: StreamData.constant(:__no_return__)
+
+  def type_to_generator({:type, _, :no_return, []}, _module),
+    do: StreamData.constant(:__no_return__)
 
   def type_to_generator({:type, _, :iodata, []}, _module) do
     # iodata is a binary or a possibly nested list of binaries, bytes (0-255), and other iolists
@@ -231,6 +241,7 @@ defmodule PropertyGenerator.Generators do
   Resolves a user type from a module's type definitions.
   Returns the resolved type or nil if not found.
   """
+  @spec resolve_user_type(module(), atom()) :: any() | nil
   def resolve_user_type(module, type_name) do
     case Code.Typespec.fetch_types(module) do
       {:ok, types} ->
@@ -246,10 +257,14 @@ defmodule PropertyGenerator.Generators do
 
   # Private helper functions
 
+  @spec extract_integer_value(any(), integer()) :: integer()
   defp extract_integer_value({:integer, _, val}, _default), do: val
+  @spec extract_integer_value(any(), integer()) :: integer()
   defp extract_integer_value(val, _default) when is_integer(val), do: val
+  @spec extract_integer_value(any(), integer()) :: integer()
   defp extract_integer_value(_val, default), do: default
 
+  @spec find_struct_field([any()]) :: any() | nil
   defp find_struct_field(field_types) do
     Enum.find(field_types, fn
       {:type, _, :map_field_exact, [{:atom, _, :__struct__}, {:atom, _, _module}]} -> true
@@ -257,6 +272,7 @@ defmodule PropertyGenerator.Generators do
     end)
   end
 
+  @spec generate_struct(atom(), [any()], module() | nil) :: any()
   defp generate_struct(module_name, field_types, module) do
     other_fields =
       Enum.reject(field_types, fn
@@ -278,12 +294,14 @@ defmodule PropertyGenerator.Generators do
     end
   end
 
+  @spec generate_field_value(any(), module() | nil) :: any()
   defp generate_field_value({:type, _, field_type, [{:atom, _, field_name}, value_type]}, module)
        when field_type in [:map_field_exact, :map_field_assoc] do
     value_gen = type_to_generator(value_type, module)
     StreamData.map(value_gen, fn value -> {field_name, value} end)
   end
 
+  @spec generate_map([any()], module() | nil) :: any()
   defp generate_map(field_types, module) do
     field_generators =
       Enum.map(field_types, fn

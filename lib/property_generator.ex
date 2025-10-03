@@ -71,7 +71,7 @@ defmodule PropertyGenerator do
   end
 
   defp run_property_test_with_spec(module, function_name, input_types, output_type, opts) do
-    input_generator = create_input_generator_runtime(input_types)
+    input_generator = create_input_generator_runtime(input_types, module)
     output_validator = create_output_validator_runtime(output_type)
     verbose = Keyword.get(opts, :verbose, false)
 
@@ -185,7 +185,7 @@ defmodule PropertyGenerator do
          output_type,
          opts
        ) do
-    input_generator = create_input_generator_runtime(input_types)
+    input_generator = create_input_generator_runtime(input_types, module1)
     output_validator = create_output_validator_runtime(output_type)
     verbose = Keyword.get(opts, :verbose, false)
 
@@ -316,7 +316,7 @@ defmodule PropertyGenerator do
   end
 
   defp run_benchee(module1, function1, module2, function2, input_types, opts) do
-    input_generator = create_input_generator_runtime(input_types)
+    input_generator = create_input_generator_runtime(input_types, module1)
     test_inputs = Enum.take(input_generator, 100)
 
     time = Keyword.get(opts, :time, 3)
@@ -553,9 +553,9 @@ defmodule PropertyGenerator do
   @doc "Parses a spec into input and output types."
   defdelegate parse_spec(spec), to: TypeParser, as: :parse_spec
 
-  @doc "Creates input generators from type specifications."
-  def create_input_generator_runtime(input_types) do
-    Generators.create_input_generator(input_types)
+  @doc "Creates input generators from type specifications. Optionally accepts a module to resolve user-defined type aliases."
+  def create_input_generator_runtime(input_types, module \\ nil) do
+    Generators.create_input_generator(input_types, module)
   end
 
   @doc "Creates output validators from type specifications."

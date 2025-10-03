@@ -8,9 +8,11 @@ defmodule PropertyGenerator.Generators do
   @doc """
   Creates input generators from type specifications.
   Returns a generator that produces lists of arguments.
+  
+  Optionally accepts a module to resolve user-defined type aliases.
   """
-  def create_input_generator(input_types) do
-    generators = Enum.map(input_types, &type_to_generator/1)
+  def create_input_generator(input_types, module \\ nil) do
+    generators = Enum.map(input_types, &type_to_generator(&1, module))
 
     case generators do
       [single_generator] ->
@@ -27,24 +29,47 @@ defmodule PropertyGenerator.Generators do
 
   @doc """
   Converts a type specification to a StreamData generator.
+  
+  Optionally accepts a module to resolve user-defined type aliases.
   """
-  def type_to_generator({:type, _, :integer, []}), do: StreamData.integer()
-  def type_to_generator({:type, _, :float, []}), do: StreamData.float()
+  def type_to_generator(type, module \\ nil)
 
-  def type_to_generator({:type, _, :number, []}),
+  # User type resolution with module context
+  def type_to_generator({:user_type, _, type_name, []}, module) when not is_nil(module) do
+    case resolve_user_type(module, type_name) do
+      nil ->
+        IO.warn("Cannot resolve user type :#{type_name} in module #{module}, using StreamData.term()")
+        StreamData.term()
+
+      resolved_type ->
+        # Recursively generate the resolved type with module context
+        type_to_generator(resolved_type, module)
+    end
+  end
+
+  # User type without module context - fallback
+  def type_to_generator({:user_type, _, type_name, []}, _module) do
+    IO.warn("Cannot resolve user type :#{type_name} without module context, using StreamData.term()")
+    StreamData.term()
+  end
+
+  def type_to_generator({:type, _, :integer, []}, _module), do: StreamData.integer()
+  def type_to_generator({:type, _, :float, []}, _module), do: StreamData.float()
+
+  def type_to_generator({:type, _, :number, []}, _module),
     do: StreamData.one_of([StreamData.integer(), StreamData.float()])
 
-  def type_to_generator({:type, _, :boolean, []}), do: StreamData.boolean()
-  def type_to_generator({:type, _, :binary, []}), do: StreamData.binary()
-  def type_to_generator({:type, _, :bitstring, []}), do: StreamData.bitstring()
-  def type_to_generator({:type, _, :atom, []}), do: StreamData.atom(:alphanumeric)
-  def type_to_generator({:type, _, :string, []}), do: StreamData.string(:printable)
-  def type_to_generator({:type, _, :any, []}), do: StreamData.term()
-  def type_to_generator({:type, _, :term, []}), do: StreamData.term()
-  def type_to_generator({:type, _, nil, []}), do: StreamData.constant(nil)
-  def type_to_generator({:type, _, :no_return, []}), do: StreamData.constant(:__no_return__)
+  def type_to_generator({:type, _, :boolean, []}, _module), do: StreamData.boolean()
+  def type_to_generator({:type, _, :binary, []}, _module), do: StreamData.binary()
+  def type_to_generator({:type, _, :bitstring, []}, _module), do: StreamData.bitstring()
+  def type_to_generator({:type, _, :atom, []}, _module), do: StreamData.atom(:alphanumeric)
+  def type_to_generator({:type, _, :string, []}, _module), do: StreamData.string(:printable)
+  def type_to_generator({:type, _, :any, []}, _module), do: StreamData.term()
+  def type_to_generator({:type, _, :term, []}, _module), do: StreamData.term()
+  def type_to_generator({:type, _, nil, []}, _module), do: StreamData.constant(nil)
+  def type_to_generator({:type, _, :no_return, []}, _module), do: StreamData.constant(:__no_return__)
 
-  def type_to_generator({:type, _, :iodata, []}) do
+  def type_to_generator({:type, _, :iodata, []}, _module) do
     # iodata is a binary or a possibly nested list of binaries, bytes (0-255), and other iolists
     StreamData.one_of([
       StreamData.binary(),
@@ -57,84 +82,84 @@ defmodule PropertyGenerator.Generators do
     ])
   end
 
-  def type_to_generator({:atom, _, atom_value}), do: StreamData.constant(atom_value)
-  def type_to_generator({:integer, _, int_value}), do: StreamData.constant(int_value)
+  def type_to_generator({:atom, _, atom_value}, _module), do: StreamData.constant(atom_value)
+  def type_to_generator({:integer, _, int_value}, _module), do: StreamData.constant(int_value)
 
-  def type_to_generator({:type, _, :keyword, []}) do
+  def type_to_generator({:type, _, :keyword, []}, _module) do
     # Generate keyword list with any atom keys and term values
     StreamData.list_of(StreamData.tuple({StreamData.atom(:alphanumeric), StreamData.term()}))
   end
 
-  def type_to_generator({:type, _, :keyword, [value_type]}) do
+  def type_to_generator({:type, _, :keyword, [value_type]}, module) do
     # Generate keyword list with any atom keys and typed values
-    value_gen = type_to_generator(value_type)
+    value_gen = type_to_generator(value_type, module)
 
     StreamData.list_of(StreamData.tuple({StreamData.atom(:alphanumeric), value_gen}))
   end
 
-  def type_to_generator({:type, _, :charlist, []}) do
+  def type_to_generator({:type, _, :charlist, []}, _module) do
     StreamData.list_of(StreamData.integer(0..1_114_111))
   end
 
-  def type_to_generator({:type, _, :non_neg_integer, []}) do
+  def type_to_generator({:type, _, :non_neg_integer, []}, _module) do
     StreamData.integer(0..1000)
   end
 
-  def type_to_generator({:type, _, :pos_integer, []}) do
+  def type_to_generator({:type, _, :pos_integer, []}, _module) do
     StreamData.integer(1..1000)
   end
 
-  def type_to_generator({:type, _, :neg_integer, []}) do
+  def type_to_generator({:type, _, :neg_integer, []}, _module) do
     StreamData.integer(-1000..-1)
   end
 
-  def type_to_generator({:type, _, :range, [min, max]}) do
+  def type_to_generator({:type, _, :range, [min, max]}, _module) do
     min_val = extract_integer_value(min, 0)
     max_val = extract_integer_value(max, 100)
     StreamData.integer(min_val..max_val)
   end
 
-  def type_to_generator({:type, _, :list, [element_type]}) do
+  def type_to_generator({:type, _, :list, [element_type]}, module) do
     case element_type do
       {:type, _, :tuple, [{:atom, _, key}, value_type]} ->
         # Keyword list
-        value_gen = type_to_generator(value_type)
+        value_gen = type_to_generator(value_type, module)
         StreamData.map(value_gen, fn value -> [{key, value}] end)
 
       _ ->
         # Regular list
-        StreamData.list_of(type_to_generator(element_type))
+        StreamData.list_of(type_to_generator(element_type, module))
     end
   end
 
-  def type_to_generator({:type, _, :list, []}), do: StreamData.list_of(StreamData.term())
+  def type_to_generator({:type, _, :list, []}, _module), do: StreamData.list_of(StreamData.term())
 
-  def type_to_generator({:type, _, :tuple, element_types}) do
-    element_generators = Enum.map(element_types, &type_to_generator/1)
+  def type_to_generator({:type, _, :tuple, element_types}, module) do
+    element_generators = Enum.map(element_types, &type_to_generator(&1, module))
     StreamData.tuple(List.to_tuple(element_generators))
   end
 
-  def type_to_generator({:type, _, :map, []}),
+  def type_to_generator({:type, _, :map, []}, _module),
     do: StreamData.map_of(StreamData.atom(:alphanumeric), StreamData.term())
 
-  def type_to_generator({:type, _, :map, :any}),
+  def type_to_generator({:type, _, :map, :any}, _module),
     do: StreamData.map_of(StreamData.atom(:alphanumeric), StreamData.term())
 
-  def type_to_generator({:type, _, :map, field_types}) when is_list(field_types) do
+  def type_to_generator({:type, _, :map, field_types}, module) when is_list(field_types) do
     struct_field = find_struct_field(field_types)
 
     case struct_field do
       {:type, _, :map_field_exact, [{:atom, _, :__struct__}, {:atom, _, module_name}]} ->
-        generate_struct(module_name, field_types)
+        generate_struct(module_name, field_types, module)
 
       nil ->
-        generate_map(field_types)
+        generate_map(field_types, module)
     end
   end
 
-  def type_to_generator({:type, _, :fun, [{:type, _, :product, arg_types}, return_type]}) do
+  def type_to_generator({:type, _, :fun, [{:type, _, :product, arg_types}, return_type]}, module) do
     # Generate a function that takes the specified args and returns the specified type
-    return_gen = type_to_generator(return_type)
+    return_gen = type_to_generator(return_type, module)
     arity = length(arg_types)
 
     # Generate functions that ignore their arguments and return valid return values
@@ -150,16 +175,16 @@ defmodule PropertyGenerator.Generators do
     end)
   end
 
-  def type_to_generator({:type, _, :union, types}) do
-    generators = Enum.map(types, &type_to_generator/1)
+  def type_to_generator({:type, _, :union, types}, module) do
+    generators = Enum.map(types, &type_to_generator(&1, module))
     StreamData.one_of(generators)
   end
 
-  def type_to_generator({:remote_type, _, [{:atom, _, String}, {:atom, _, :t}, []]}) do
+  def type_to_generator({:remote_type, _, [{:atom, _, String}, {:atom, _, :t}, []]}, _module) do
     StreamData.string(:printable)
   end
 
-  def type_to_generator({:remote_type, _, [{:atom, _, module}, {:atom, _, :t}, []]}) do
+  def type_to_generator({:remote_type, _, [{:atom, _, module}, {:atom, _, :t}, []]}, _module) do
     # Handle remote type references like User.t()
     case Code.ensure_loaded(module) do
       {:module, ^module} ->
@@ -183,7 +208,7 @@ defmodule PropertyGenerator.Generators do
 
               other_type ->
                 # It's some other type, generate it
-                type_to_generator(other_type)
+                type_to_generator(other_type, module)
             end
 
           _ ->
@@ -197,9 +222,26 @@ defmodule PropertyGenerator.Generators do
     end
   end
 
-  def type_to_generator(type) do
+  def type_to_generator(type, _module) when is_tuple(type) do
     IO.warn("Unknown type #{inspect(type)}, using StreamData.term()")
     StreamData.term()
+  end
+
+  @doc """
+  Resolves a user type from a module's type definitions.
+  Returns the resolved type or nil if not found.
+  """
+  def resolve_user_type(module, type_name) do
+    case Code.Typespec.fetch_types(module) do
+      {:ok, types} ->
+        Enum.find_value(types, fn
+          {:type, {^type_name, type_ast, []}} -> type_ast
+          _ -> nil
+        end)
+
+      _ ->
+        nil
+    end
   end
 
   # Private helper functions
@@ -215,14 +257,14 @@ defmodule PropertyGenerator.Generators do
     end)
   end
 
-  defp generate_struct(module_name, field_types) do
+  defp generate_struct(module_name, field_types, module) do
     other_fields =
       Enum.reject(field_types, fn
         {:type, _, :map_field_exact, [{:atom, _, :__struct__}, _]} -> true
         _ -> false
       end)
 
-    field_values = Enum.map(other_fields, &generate_field_value/1)
+    field_values = Enum.map(other_fields, &generate_field_value(&1, module))
 
     case field_values do
       [] ->
@@ -236,19 +278,19 @@ defmodule PropertyGenerator.Generators do
     end
   end
 
-  defp generate_field_value({:type, _, field_type, [{:atom, _, field_name}, value_type]})
+  defp generate_field_value({:type, _, field_type, [{:atom, _, field_name}, value_type]}, module)
        when field_type in [:map_field_exact, :map_field_assoc] do
-    value_gen = type_to_generator(value_type)
+    value_gen = type_to_generator(value_type, module)
     StreamData.map(value_gen, fn value -> {field_name, value} end)
   end
 
-  defp generate_map(field_types) do
+  defp generate_map(field_types, module) do
     field_generators =
       Enum.map(field_types, fn
         {:type, _, field_type, [key_type, value_type]}
         when field_type in [:map_field_exact, :map_field_assoc] ->
-          key_gen = type_to_generator(key_type)
-          value_gen = type_to_generator(value_type)
+          key_gen = type_to_generator(key_type, module)
+          value_gen = type_to_generator(value_type, module)
           StreamData.tuple({key_gen, value_gen})
       end)
 
